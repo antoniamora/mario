@@ -30,6 +30,11 @@ function preload() {
     );
 
     this.load.image(
+        'bush1',
+        'assets/scenery/overworld/bush1.png'
+    )
+
+    this.load.image(
         'floorbricks',
         'assets/scenery/overworld/floorbricks.png'
     );
@@ -43,21 +48,26 @@ function preload() {
     this.load.spritesheet(
         'goomba',
         'assets/entities/overworld/goomba.png',
-        { frameWidth: 18, frameHeight: 16 }
+        { frameWidth: 16, frameHeight: 16 }
     )
 
-    this.load.audio('gameover', 'assets/sound/music/gameover.mp3')
+    this.load.audio('gameover', 'assets/sound/music/gameover.mp3');
+
+    this.load.audio('goomba-stomp', 'assets/sound/effects/goomba-stomp.wav')
 }
 
 function create() {
+
     this.add.image(100, 50, 'cloud1').setOrigin(0, 0).setScale(0.15);
+    this.add.image(200, 207, 'bush1').setOrigin(0, 0).setScale(0.15);
 
     this.floor = this.physics.add.staticGroup();
 
-    this.floor.create(0, config.height - 16, 'floorbricks').setOrigin(0, 0.5).refreshBody();
-    this.floor.create(110, config.height - 16, 'floorbricks').setOrigin(0, 0.5).refreshBody();
+    const floorPositions = [0, 110, 200, 370, 550]
 
-    this.floor.create(290, config.height - 16, 'floorbricks').setOrigin(0, 0.5).refreshBody();
+    floorPositions.forEach(pos => {
+        this.floor.create(pos, config.height - 16, 'floorbricks')
+    })
 
     this.mario = this.physics.add.sprite(50, 100, 'mario')
         .setOrigin(0, 1)
@@ -70,19 +80,19 @@ function create() {
 
     this.physics.world.setBounds(0, 0, 2000, config.height);
 
-    this.physics.add.collider(this.mario, this.floor);
-    this.physics.add.collider(this.goomba, this.floor);
+    this.myFloorMarioCollider = this.physics.add.collider(this.mario, this.floor);
+    this.myFloorGoombaCollider = this.physics.add.collider(this.goomba, this.floor);
 
     this.cameras.main.setBounds(0, 0, 2000, config.height);
     this.cameras.main.startFollow(this.mario);
 
     createAnimations(this);
 
-    this.physics.add.collider(this.mario, this.goomba, marioTouchGoomba, null, this);
+    this.marioAndGoombaCollider = this.physics.add.collider(this.mario, this.goomba, marioTouchGoomba, null, this);
 
     this.tweens.add({
         targets: this.goomba,
-        x: this.goomba.x + 40,
+        x: this.goomba.x + 50,
         duration: 700,
         yoyo: true,
         repeat: -1,
@@ -92,19 +102,45 @@ function create() {
     this.keys = this.input.keyboard.createCursorKeys();
 }
 
+let marioIsTouchedByGoomba = false;
+let goombaIsDying = false;
+
 function marioTouchGoomba(mario, goomba) {
-    mario.isDead = true;
-    mario.anims.play('mario-dead');
-    mario.setCollideWorldBounds(false);
-    this.sound.play('gameover');
-
-    setTimeout(() => {
-        mario.setVelocityY(-350);
-    }, 100);
-
-    setTimeout(() => {
-        this.scene.restart();
-    }, 2000);
+    
+    if(!marioIsTouchedByGoomba && !goombaIsDying) {
+        if(mario.y >  195)
+        {
+            marioIsTouchedByGoomba = true;
+            mario.isDead = true;
+            mario.anims.play('mario-dead');
+            this.myFloorMarioCollider.destroy();
+            mario.setCollideWorldBounds(false);
+            this.sound.play('gameover');
+    
+            setTimeout(() => {
+                this.mario.setVelocityY(-350);
+            }, 100);
+    
+            setTimeout(() => {
+                this.scene.restart();
+                marioIsTouchedByGoomba = false;
+            }, 7000);
+        }
+        else
+        {
+            goombaIsDying = true;
+            this.marioAndGoombaCollider.destroy();
+            goomba.anims.play('goomba-dead');
+            goomba.setCollideWorldBounds(false);
+            this.myFloorGoombaCollider.destroy();
+            this.sound.play('goomba-stomp');
+            setTimeout(() => {
+                this.goomba.setVelocityY(-50);
+            }, 100);
+        }
+    }  
+            
+        
 }
 
 function update() {
@@ -140,6 +176,6 @@ function update() {
 
         setTimeout(() => {
             this.scene.restart();
-        }, 2000);
+        }, 7000);
     }
 }

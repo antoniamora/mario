@@ -27,5 +27,10 @@ export const createAnimations = (game) => {
     game.anims.create({
         key: 'goomba',
         frames: [{ key: 'goomba', frame: 1 }]
+    });
+
+    game.anims.create({
+        key: 'goomba-dead',
+        frames: [{ key: 'goomba', frame: 2 }]
     })
 }
