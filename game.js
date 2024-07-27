@@ -30,14 +30,34 @@ function preload() {
     );
 
     this.load.image(
+        'cloud2',
+        'assets/scenery/overworld/cloud2.png'
+    );
+
+    this.load.image(
         'bush1',
         'assets/scenery/overworld/bush1.png'
+    )
+    
+    this.load.image(
+        'bush2',
+        'assets/scenery/overworld/bush2.png'
     )
 
     this.load.image(
         'floorbricks',
         'assets/scenery/overworld/floorbricks.png'
     );
+
+    this.load.image(
+        'flagmast',
+        'assets/scenery/flag-mast.png'
+    );
+
+    this.load.image(
+        'finalflag',
+        'assets/scenery/final-flag.png'
+    )
 
     this.load.spritesheet(
         'mario',
@@ -53,17 +73,68 @@ function preload() {
 
     this.load.audio('gameover', 'assets/sound/music/gameover.mp3');
 
-    this.load.audio('goomba-stomp', 'assets/sound/effects/goomba-stomp.wav')
+    this.load.audio('goomba-stomp', 'assets/sound/effects/goomba-stomp.wav');
+
+    this.load.audio('theme', 'assets/sound/music/overworld/theme.mp3');
+
+    this.load.audio('win', 'assets/sound/music/win.wav')
 }
 
 function create() {
 
-    this.add.image(100, 50, 'cloud1').setOrigin(0, 0).setScale(0.15);
-    this.add.image(200, 207, 'bush1').setOrigin(0, 0).setScale(0.15);
+    const cloudPositions = [
+        { x: 80, y: 50, key: 'cloud1' },
+        { x: 350, y: 80, key: 'cloud2' }
+    ];
+    
+    // Valores comunes para todas las nubes
+    const cloudScale = 0.15;
+    const cloudOrigin = { x: 0, y: 0 };
+    
+    // Añadir las nubes en las posiciones especificadas
+    cloudPositions.forEach(cloud => {
+        this.add.image(cloud.x, cloud.y, cloud.key)
+            .setOrigin(cloudOrigin.x, cloudOrigin.y)
+            .setScale(cloudScale);
+    });
+
+    const bushPositions = [
+        { x: 180, y: 202, key: 'bush1' },
+        { x: 600, y: 202, key: 'bush2' }
+    ];
+
+    const bushScale = 0.3;
+    const bushOrigin = { x: 0, y: 0 };
+
+    bushPositions.forEach(bush => {
+        this.add.image(bush.x, bush.y, bush.key)
+            .setOrigin(bushOrigin.x, bushOrigin.y)
+            .setScale(bushScale);
+    })
+
+    const flagPosition = [
+        { x: 920, y: 202, key: 'flagmast' }
+    ];
+
+    flagPosition.forEach(flag => {
+        this.add.image(flag.x, flag.y, flag.key)
+            .setOrigin(0, 0.94)
+            .setScale(1);
+    })
+
+    const finalFlagPosition = [
+        { x: 920, y: 199, key: 'finalflag' }
+    ];
+
+    finalFlagPosition.forEach(finalflag => {
+        this.add.image(finalflag.x, finalflag.y, finalflag.key)
+            .setOrigin(0.6, 9)
+            .setScale(1)
+    })
 
     this.floor = this.physics.add.staticGroup();
 
-    const floorPositions = [0, 110, 200, 370, 550]
+    const floorPositions = [0, 110, 200, 370, 550, 600, 640, 810, 880]
 
     floorPositions.forEach(pos => {
         this.floor.create(pos, config.height - 16, 'floorbricks')
@@ -89,6 +160,7 @@ function create() {
     createAnimations(this);
 
     this.marioAndGoombaCollider = this.physics.add.collider(this.mario, this.goomba, marioTouchGoomba, null, this);
+    this.marioAndFlagMastCollider = this.physics.add.collider(this.mario, this.flagmast, marioTouchFlagMast, null, this);
 
     this.tweens.add({
         targets: this.goomba,
@@ -138,13 +210,33 @@ function marioTouchGoomba(mario, goomba) {
                 this.goomba.setVelocityY(-50);
             }, 100);
         }
-    }  
-            
-        
+    }      
+}
+
+let marioIsTouchedByFlagMast = false;
+
+function marioTouchFlagMast(mario) {
+    if (!marioIsTouchedByFlagMast) {
+        marioIsTouchedByFlagMast = true;
+        this.marioAndFlagMastCollider.destroy();
+        mario.anims.play('mario-wins');
+        mario.wins = true;
+        this.sound.play('win');
+
+        // Animar finalflag para que baje hasta la altura de Mario
+        this.tweens.add({
+            targets: this.finalflag,
+            y: mario.y, // Bajar hasta la altura de Mario
+            duration: 2000,
+            ease: 'Linear'
+        });
+    }
 }
 
 function update() {
     if (this.mario.isDead) return;
+ 
+    if (this.mario.wins) return;
 
     if (this.keys.left.isDown) {
         this.mario.setVelocityX(-160);
