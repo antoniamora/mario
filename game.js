@@ -1,6 +1,10 @@
 import { createAnimations } from "./animations.js";
+import { initAudio, playAudio } from "./audios.js";
+import { checkControls } from "./controls.js";
+import { initSpritesheet } from "./spritesheet.js";
 
 const config = {
+    autoFocus: false,
     type: Phaser.AUTO,
     width: 256,
     height: 244,
@@ -23,6 +27,8 @@ const config = {
 new Phaser.Game(config);
 
 function preload() {
+
+    // Imágenes
 
     this.load.image(
         'cloud1',
@@ -59,28 +65,18 @@ function preload() {
         'assets/scenery/final-flag.png'
     )
 
-    this.load.spritesheet(
-        'mario',
-        'assets/entities/mario.png',
-        { frameWidth: 18, frameHeight: 16 }
-    );
+    // Spritesheets
 
-    this.load.spritesheet(
-        'goomba',
-        'assets/entities/overworld/goomba.png',
-        { frameWidth: 16, frameHeight: 16 }
-    )
+    initSpritesheet(this);
 
-    this.load.audio('gameover', 'assets/sound/music/gameover.mp3');
+    // Audio
 
-    this.load.audio('goomba-stomp', 'assets/sound/effects/goomba-stomp.wav');
-
-    this.load.audio('theme', 'assets/sound/music/overworld/theme.mp3');
-
-    this.load.audio('win', 'assets/sound/music/win.wav')
+    initAudio(this);
 }
 
 function create() {
+
+    createAnimations(this);
 
     const cloudPositions = [
         { x: 80, y: 50, key: 'cloud1' },
@@ -147,7 +143,7 @@ function create() {
     
     this.goomba = this.physics.add.sprite(350, 100, 'goomba')
         .setOrigin(0, 1)
-        .setCollideWorldBounds(true)
+        .setCollideWorldBounds(true);
 
     this.physics.world.setBounds(0, 0, 2000, config.height);
 
@@ -157,7 +153,9 @@ function create() {
     this.cameras.main.setBounds(0, 0, 2000, config.height);
     this.cameras.main.startFollow(this.mario);
 
-    createAnimations(this);
+    this.coins = this.physics.add.staticGroup();
+    this.coins.create(600, 150, 'coin').anims.play('coin-idle', true);
+    this.physics.add.overlap(this.mario, this.coins, collectCoin, null, this)
 
     this.marioAndGoombaCollider = this.physics.add.collider(this.mario, this.goomba, marioTouchGoomba, null, this);
     this.marioAndFlagMastCollider = this.physics.add.collider(this.mario, this.flagmast, marioTouchFlagMast, null, this);
@@ -172,6 +170,37 @@ function create() {
     });
 
     this.keys = this.input.keyboard.createCursorKeys();
+}
+
+function collectCoin(mario, coin) {
+    coin.destroy();
+    playAudio('coin-pickup', this, { volume: 0.1 });
+
+    const scoreText = this.add.text(
+        coin.x,
+        coin.y,
+        200,
+        {
+            fontFamily: 'SuperMario',
+            fontSize: config.width / 40
+        }
+    )
+
+    this.tweens.add({
+        targets: scoreText,
+        duration: 500,
+        y: scoreText.y - 20,
+        onComplete: () => {
+            this.tweens.add({
+                targets: scoreText,
+                duration: 100,
+                alpha: 0,
+                onComplete: () => {
+                    scoreText.destroy()
+                }
+            })
+        }
+    })
 }
 
 let marioIsTouchedByGoomba = false;
@@ -205,7 +234,8 @@ function marioTouchGoomba(mario, goomba) {
             goomba.anims.play('goomba-dead');
             goomba.setCollideWorldBounds(false);
             this.myFloorGoombaCollider.destroy();
-            this.sound.play('goomba-stomp');
+            playAudio('goomba-stomp', this);
+
             setTimeout(() => {
                 this.goomba.setVelocityY(-50);
             }, 100);
@@ -234,40 +264,25 @@ function marioTouchFlagMast(mario) {
 }
 
 function update() {
-    if (this.mario.isDead) return;
- 
-    if (this.mario.wins) return;
+    checkControls(this);
+    const { mario, sound, scene } = this;
 
-    if (this.keys.left.isDown) {
-        this.mario.setVelocityX(-160);
-        this.mario.anims.play('mario-walk', true);
-        this.mario.flipX = true;
-    } else if (this.keys.right.isDown) {
-        this.mario.setVelocityX(160);
-        this.mario.anims.play('mario-walk', true);
-        this.mario.flipX = false;
-    } else {
-        this.mario.setVelocityX(0);
-        this.mario.anims.play('mario-idle', true);
-    }
+    if (mario.isDead) return;
+    if (mario.wins) return;
 
-    if (this.keys.up.isDown && this.mario.body.touching.down) {
-        this.mario.setVelocityY(-330);
-        this.mario.anims.play('mario-jump', true);
-    }
-
-    if (this.mario.y >= config.height) {
-        this.mario.isDead = true;
-        this.mario.anims.play('mario-dead');
-        this.mario.setCollideWorldBounds(false);
-        this.sound.play('gameover');
+    //Check if Mario is dead
+    if (mario.y >= config.height) {
+        mario.isDead = true;
+        mario.anims.play('mario-dead');
+        mario.setCollideWorldBounds(false);
+        playAudio('gameover', this, { volume: 0.2 })
 
         setTimeout(() => {
-            this.mario.setVelocityY(-350);
+            mario.setVelocityY(-350);
         }, 100);
 
         setTimeout(() => {
-            this.scene.restart();
+            scene.restart();
         }, 7000);
     }
 }

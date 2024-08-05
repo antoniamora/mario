@@ -37,5 +37,15 @@ export const createAnimations = (game) => {
     game.anims.create({
         key: 'mario-wins',
         frames: [{ key: 'mario', frame: 5 }]
-    })
+    });
+
+    game.anims.create({
+        key: 'coin-idle',
+        frames: game.anims.generateFrameNumbers(
+            'coin',
+            { start: 0, end: 3 }
+        ),
+        frameRate: 12,
+        repeat: -1
+    });
 }
