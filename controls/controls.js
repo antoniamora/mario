@@ -1,8 +1,22 @@
+const MARIO_ANIMATIONS = {
+    grown: {
+        idle: 'mario-grown-idle',
+        walk: 'mario-grown-walk',
+        jump: 'mario-grown-jump'
+    },
+    normal: {
+        idle: 'mario-idle',
+        walk: 'mario-walk',
+        jump: 'mario-jump'
+    }
+}
+
 export function checkControls ({ mario, keys }) {    
     const isMarioTouchingFloor = mario.body.touching.down;
     const isLeftKeyDown = keys.left.isDown;
     const isRightKeyDown = keys.right.isDown;
     const isUpKeyDown = keys.up.isDown;
+    const marioAnimations = mario.isGrown ? MARIO_ANIMATIONS.grown : MARIO_ANIMATIONS.normal;
 
     if (isLeftKeyDown) {
         isMarioTouchingFloor && mario.anims.play('mario-walk', true);
@@ -13,7 +27,7 @@ export function checkControls ({ mario, keys }) {
         mario.x += 2;
         mario.flipX = false;
     } else if(isMarioTouchingFloor) {
-        mario.anims.play('mario-idle', true);
+        mario.anims.play(marioAnimations.idle, true);
     }
 
     if (isUpKeyDown && isMarioTouchingFloor) {

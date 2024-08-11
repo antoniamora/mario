@@ -4,7 +4,7 @@ const INIT_AUDIOS = [
         path: 'assets/sound/music/gameover.mp3'
     },
     {
-        key: 'goomba-stopm',
+        key: 'goomba-stomp',
         path: 'assets/sound/effects/goomba-stomp.wav'
     },
     {
@@ -18,6 +18,10 @@ const INIT_AUDIOS = [
     {
         key: 'coin-pickup',
         path: 'assets/sound/effects/coin.mp3'
+    },
+    {
+        key: 'consume-powerup',
+        path: 'assets/sound/effects/consume-powerup.mp3'
     }
 ]
 
